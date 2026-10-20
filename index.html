@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Terra Explorer - Monde Entier</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .glass { background: rgba(15, 23, 42, 0.90); backdrop-filter: blur(16px); }
+    .active-scale:active { transform: scale(0.96); }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between pb-20 select-none">
+
+  <!-- En-tête -->
+  <header class="p-4 glass border-b border-slate-800 sticky top-0 z-20 flex justify-between items-center">
+    <div>
+      <h1 class="text-lg font-black bg-gradient-to-r from-teal-400 to-indigo-400 bg-clip-text text-transparent">
+        TERRA EXPLORER
+      </h1>
+      <p class="text-[11px] text-slate-400" id="countriesCounter">Chargement des 250 pays...</p>
+    </div>
+    <!-- Badge XP utilisateur -->
+    <button onclick="switchView('friends')" class="flex items-center gap-2 bg-slate-900 border border-slate-700/80 px-3 py-1.5 rounded-full active-scale">
+      <span class="text-amber-400 text-xs font-black">⚡ <span id="headerXp">0</span> XP</span>
+      <span class="text-[10px] text-slate-400 border-l border-slate-700 pl-2">Niv. <span id="headerLvl">1</span></span>
+    </button>
+  </header>
+
+  <!-- Notification Flottante -->
+  <div id="toast" class="fixed top-16 inset-x-4 mx-auto max-w-sm glass border border-amber-500/50 text-amber-200 px-4 py-3 rounded-2xl shadow-xl z-50 flex items-center gap-3 transition-all duration-300 opacity-0 pointer-events-none translate-y-[-20px]">
+    <span class="text-2xl">🔥</span>
+    <p class="text-xs font-bold" id="toastMessage"></p>
+  </div>
+
+  <!-- VUE 1 : EXPLORATION DES 250 PAYS -->
+  <main id="viewExplore" class="p-4 flex-1 flex flex-col items-center">
+    <div class="w-full max-w-md">
+
+      <!-- Barre de recherche -->
+      <div class="relative mb-3">
+        <input id="searchInput" oninput="filterCountries()" type="text" placeholder="Rechercher un pays (ex: Japon, Sénégal, Pérou)..." 
+               class="w-full bg-slate-900 border border-slate-800 rounded-2xl py-2.5 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-400">
+        <span class="absolute left-3.5 top-2.5 text-xs text-slate-500">🔍</span>
+      </div>
+
+      <!-- Filtres par Continents -->
+      <div class="flex gap-2 overflow-x-auto no-scrollbar pb-3 mb-2" id="continentsBar">
+        <button onclick="setContinent('all')" class="continent-btn bg-teal-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Tous</button>
+        <button onclick="setContinent('Africa')" class="continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Afrique</button>
+        <button onclick="setContinent('Europe')" class="continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Europe</button>
+        <button onclick="setContinent('Asia')" class="continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Asie</button>
+        <button onclick="setContinent('Americas')" class="continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Amériques</button>
+        <button onclick="setContinent('Oceania')" class="continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale">Océanie</button>
+      </div>
+
+      <!-- Indicateur de chargement -->
+      <div id="loader" class="text-center py-12">
+        <div class="inline-block animate-spin text-3xl mb-2">🌍</div>
+        <p class="text-xs text-slate-400">Téléchargement du monde en cours...</p>
+      </div>
+
+      <!-- Grille des Pays -->
+      <div class="grid grid-cols-2 gap-2.5 hidden" id="countriesGrid"></div>
+    </div>
+  </main>
+
+  <!-- VUE 2 : CLASSEMENT & AMIS -->
+  <section id="viewFriends" class="p-4 flex-1 flex flex-col items-center hidden">
+    <div class="w-full max-w-md">
+      
+      <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl mb-5 shadow-lg">
+        <h3 class="text-xs font-black text-teal-400 uppercase tracking-wider mb-2">Ajouter un rival</h3>
+        <div class="flex gap-2">
+          <input id="friendInput" type="text" placeholder="Pseudo de votre ami..." class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-400">
+          <button onclick="addFriend()" class="bg-teal-500 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs active-scale">Ajouter</button>
+        </div>
+      </div>
+
+      <h3 class="text-xs font-black text-slate-400 uppercase tracking-wider mb-3">Ligue des Explorateurs</h3>
+      <div class="space-y-2.5" id="leaderboardList"></div>
+    </div>
+  </section>
+
+  <!-- BARRE DE NAVIGATION INFÉRIEURE -->
+  <nav class="fixed bottom-0 inset-x-0 glass border-t border-slate-800/80 px-6 py-2.5 flex justify-around items-center z-20">
+    <button onclick="switchView('explore')" id="navExplore" class="flex flex-col items-center gap-1 text-teal-400">
+      <span class="text-lg">🗺️</span>
+      <span class="text-[10px] font-bold">Monde</span>
+    </button>
+    <button onclick="switchView('friends')" id="navFriends" class="flex flex-col items-center gap-1 text-slate-400">
+      <span class="text-lg">🏆</span>
+      <span class="text-[10px] font-bold">Classement</span>
+    </button>
+  </nav>
+
+  <!-- FICHE PAYS DÉROULANTE (Drawer Wikipédia + Quizz dynamique) -->
+  <div id="drawer" class="fixed inset-x-0 bottom-0 max-h-[88vh] glass border-t border-slate-700/80 rounded-t-3xl p-5 overflow-y-auto transform translate-y-full transition-transform duration-300 ease-out z-40 shadow-2xl">
+    
+    <div class="flex justify-between items-start mb-4">
+      <div class="flex items-center gap-3">
+        <img id="pFlagImg" class="w-12 h-8 object-cover rounded-md shadow border border-slate-700" alt="Drapeau">
+        <div>
+          <h3 id="pName" class="text-xl font-black"></h3>
+          <p id="pCapital" class="text-xs text-teal-400 font-bold"></p>
+        </div>
+      </div>
+      <button onclick="closeDrawer()" class="text-slate-400 bg-slate-800/80 p-2 rounded-full text-xs active-scale">✕</button>
+    </div>
+
+    <!-- Stats rapides -->
+    <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+      <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+        <p class="text-[9px] text-slate-400 uppercase font-bold">Région</p>
+        <p id="pRegion" class="font-bold text-xs text-slate-200 mt-0.5 truncate"></p>
+      </div>
+      <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+        <p class="text-[9px] text-slate-400 uppercase font-bold">Superficie</p>
+        <p id="pArea" class="font-bold text-xs text-slate-200 mt-0.5 truncate"></p>
+      </div>
+      <div class="bg-slate-900/80 p-2 rounded-xl border border-slate-800">
+        <p class="text-[9px] text-slate-400 uppercase font-bold">Population</p>
+        <p id="pPop" class="font-bold text-xs text-slate-200 mt-0.5 truncate"></p>
+      </div>
+    </div>
+
+    <!-- Histoire & Résumé Wikipédia chargé en direct -->
+    <div class="bg-slate-900/70 border border-slate-800 p-3.5 rounded-2xl mb-4">
+      <h4 class="text-xs font-black text-teal-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <span>📖</span> Histoire & Wikipédia
+      </h4>
+      <div id="wikiLoading" class="text-xs text-slate-400 animate-pulse">Recherche sur Wikipédia...</div>
+      <p id="wikiExtract" class="text-xs text-slate-300 leading-relaxed hidden"></p>
+    </div>
+
+    <!-- Mini-Jeu Quizz Dynamique généré pour CE pays -->
+    <div class="bg-gradient-to-r from-indigo-950/80 to-slate-900 border border-indigo-500/40 p-4 rounded-2xl">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-xs font-black text-indigo-300 uppercase tracking-wider">⚡ Quizz Aléatoire (+50 XP)</span>
+        <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full font-bold">En direct</span>
+      </div>
+      <p id="quizQuestion" class="text-xs font-bold mb-3"></p>
+      <div id="quizAnswers" class="grid grid-cols-1 gap-2"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let allCountries = [];
+    let displayedCountries = [];
+    let currentContinent = 'all';
+
+    let userData = JSON.parse(localStorage.getItem('terraUser')) || { name: "Vous", xp: 0, avatar: "🧭" };
+    let friends = JSON.parse(localStorage.getItem('terraFriends')) || [
+      { name: "Léa", xp: 220, avatar: "🦊" },
+      { name: "Thomas", xp: 140, avatar: "🚀" },
+      { name: "Karim", xp: 70, avatar: "⚡" }
+    ];
+
+    function saveAll() {
+      localStorage.setItem('terraUser', JSON.stringify(userData));
+      localStorage.setItem('terraFriends', JSON.stringify(friends));
+    }
+
+    // CHARGEMENT DES 250 PAYS DEPUIS L'API MONDIALE
+    async function fetchAllCountries() {
+      try {
+        const res = await fetch('https://restcountries.com/v3.1/all?fields=name,translations,capital,region,subregion,population,area,flags');
+        const data = await res.json();
+
+        allCountries = data.map(c => ({
+          nameFr: c.translations?.fra?.common || c.name.common,
+          nameEn: c.name.common,
+          capital: c.capital?.[0] || "Non spécifiée",
+          region: c.region,
+          subregion: c.subregion || c.region,
+          population: c.population ? c.population.toLocaleString('fr-FR') : "N/C",
+          rawPop: c.population || 0,
+          area: c.area ? c.area.toLocaleString('fr-FR') + " km²" : "N/C",
+          flag: c.flags?.png || c.flags?.svg
+        })).sort((a, b) => a.nameFr.localeCompare(b.nameFr, 'fr'));
+
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('countriesGrid').classList.remove('hidden');
+        document.getElementById('countriesCounter').innerText = `${allCountries.length} pays et territoires connectés`;
+
+        displayedCountries = [...allCountries];
+        renderGrid();
+        updateHeader();
+      } catch (err) {
+        document.getElementById('loader').innerHTML = "<p class='text-rose-400 text-xs'>Erreur de connexion. Vérifiez votre réseau.</p>";
+      }
+    }
+
+    // Affichage des cartes de pays
+    function renderGrid() {
+      const grid = document.getElementById('countriesGrid');
+      grid.innerHTML = '';
+      
+      displayedCountries.slice(0, 100).forEach(c => {
+        const btn = document.createElement('button');
+        btn.className = "bg-slate-900 border border-slate-800 p-3 rounded-2xl flex flex-col items-center justify-center text-center hover:border-teal-400 active-scale transition-all";
+        btn.onclick = () => openCountry(c);
+        btn.innerHTML = `
+          <img src="${c.flag}" class="w-10 h-7 object-cover rounded shadow mb-1.5 border border-slate-800" alt="${c.nameFr}">
+          <span class="font-bold text-xs text-slate-100 truncate w-full">${c.nameFr}</span>
+          <span class="text-[10px] text-teal-400 font-semibold truncate w-full">${c.capital}</span>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    // Recherche instantanée
+    function filterCountries() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      displayedCountries = allCountries.filter(c => {
+        const matchesName = c.nameFr.toLowerCase().includes(q) || c.capital.toLowerCase().includes(q);
+        const matchesCont = currentContinent === 'all' || c.region === currentContinent;
+        return matchesName && matchesCont;
+      });
+      renderGrid();
+    }
+
+    // Filtre par continent
+    function setContinent(continent) {
+      currentContinent = continent;
+      document.querySelectorAll('.continent-btn').forEach(btn => {
+        btn.className = "continent-btn bg-slate-900 border border-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale";
+      });
+      event.target.className = "continent-btn bg-teal-500 text-slate-950 font-bold px-3 py-1.5 rounded-xl text-[11px] whitespace-nowrap active-scale";
+      filterCountries();
+    }
+
+    // Ouvrir la fiche du pays et interroger Wikipédia
+    async function openCountry(c) {
+      document.getElementById('pFlagImg').src = c.flag;
+      document.getElementById('pName').innerText = c.nameFr;
+      document.getElementById('pCapital').innerText = "Capitale : " + c.capital;
+      document.getElementById('pRegion').innerText = c.subregion;
+      document.getElementById('pArea').innerText = c.area;
+      document.getElementById('pPop').innerText = c.population;
+
+      // Reset et chargement Wikipédia
+      const wikiLoading = document.getElementById('wikiLoading');
+      const wikiExtract = document.getElementById('wikiExtract');
+      wikiLoading.classList.remove('hidden');
+      wikiExtract.classList.add('hidden');
+
+      // Générateur de quizz instantané
+      generateAutoQuiz(c);
+
+      document.getElementById('drawer').classList.remove('translate-y-full');
+
+      try {
+        const res = await fetch(`https://fr.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(c.nameFr)}`);
+        const data = await res.json();
+        if (data.extract) {
+          wikiExtract.innerText = data.extract;
+          wikiLoading.classList.add('hidden');
+          wikiExtract.classList.remove('hidden');
+        } else {
+          wikiExtract.innerText = `${c.nameFr} est un territoire situé en ${c.region}. Sa capitale est ${c.capital}.`;
+          wikiLoading.classList.add('hidden');
+          wikiExtract.classList.remove('hidden');
+        }
+      } catch {
+        wikiExtract.innerText = `Découvrez l'histoire fascinante de ${c.nameFr}, territoire d'une superficie de ${c.area}.`;
+        wikiLoading.classList.add('hidden');
+        wikiExtract.classList.remove('hidden');
+      }
+    }
+
+    function closeDrawer() {
+      document.getElementById('drawer').classList.add('translate-y-full');
+    }
+
+    // GÉNÉRATEUR DE QUIZZ DYNAMIQUE SUR LES 250 PAYS
+    function generateAutoQuiz(c) {
+      const qBox = document.getElementById('quizQuestion');
+      const ansBox = document.getElementById('quizAnswers');
+      ansBox.innerHTML = '';
+
+      // Pioche 2 autres mauvaises réponses au hasard dans les 250 pays
+      const others = allCountries.filter(item => item.nameFr !== c.nameFr && item.capital !== "Non spécifiée");
+      const wrong1 = others[Math.floor(Math.random() * others.length)].capital;
+      const wrong2 = others[Math.floor(Math.random() * others.length)].capital;
+
+      qBox.innerText = `Quelle est la capitale officielle de : ${c.nameFr} ?`;
+      const answers = [
+        { text: c.capital, correct: true },
+        { text: wrong1, correct: false },
+        { text: wrong2, correct: false }
+      ].sort(() => Math.random() - 0.5);
+
+      answers.forEach(a => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left bg-slate-900 border border-slate-700/60 p-2.5 rounded-xl text-xs hover:border-teal-400 active-scale transition-colors";
+        btn.innerText = a.text;
+        btn.onclick = () => checkQuiz(a.correct, btn);
+        ansBox.appendChild(btn);
+      });
+    }
+
+    function checkQuiz(isCorrect, btn) {
+      if (isCorrect) {
+        btn.classList.add('!bg-teal-500/20', '!border-teal-400', '!text-teal-200');
+        btn.innerHTML += " ✅ Bonne réponse ! (+50 XP)";
+        
+        const oldRank = [...friends, userData].sort((a,b) => b.xp - a.xp).findIndex(p => p.name === userData.name) + 1;
+        userData.xp += 50;
+        saveAll();
+        updateHeader();
+
+        const newRank = [...friends, userData].sort((a,b) => b.xp - a.xp).findIndex(p => p.name === userData.name) + 1;
+        if (newRank < oldRank) {
+          showToast(`⚡ Bravo ! Tu viens de grimper au Rang #${newRank} !`);
+        }
+      } else {
+        btn.classList.add('!bg-rose-500/20', '!border-rose-400', '!text-rose-200');
+        btn.innerHTML += " ❌ Erreur !";
+      }
+    }
+
+    // Gestion Amis & Classement
+    function updateHeader() {
+      document.getElementById('headerXp').innerText = userData.xp;
+      document.getElementById('headerLvl').innerText = Math.floor(userData.xp / 100) + 1;
+      const allPlayers = [...friends, userData].sort((a,b) => b.xp - a.xp);
+      const userRank = allPlayers.findIndex(p => p.name === userData.name) + 1;
+      if (allCountries.length > 0) {
+        document.getElementById('countriesCounter').innerText = `Rang #${userRank} • ${allCountries.length} pays explorables`;
+      }
+    }
+
+    function switchView(view) {
+      if (view === 'explore') {
+        document.getElementById('viewExplore').classList.remove('hidden');
+        document.getElementById('viewFriends').classList.add('hidden');
+        document.getElementById('navExplore').className = "flex flex-col items-center gap-1 text-teal-400";
+        document.getElementById('navFriends').className = "flex flex-col items-center gap-1 text-slate-400";
+      } else {
+        document.getElementById('viewExplore').classList.add('hidden');
+        document.getElementById('viewFriends').classList.remove('hidden');
+        document.getElementById('navFriends').className = "flex flex-col items-center gap-1 text-teal-400";
+        document.getElementById('navExplore').className = "flex flex-col items-center gap-1 text-slate-400";
+        renderLeaderboard();
+      }
+    }
+
+    function renderLeaderboard() {
+      const list = document.getElementById('leaderboardList');
+      list.innerHTML = '';
+      const leaderboard = [...friends, userData].sort((a,b) => b.xp - a.xp);
+
+      leaderboard.forEach((p, idx) => {
+        const isUser = p.name === userData.name;
+        const div = document.createElement('div');
+        div.className = `p-3 rounded-2xl flex items-center justify-between border ${isUser ? 'bg-teal-950/70 border-teal-500' : 'bg-slate-900/60 border-slate-800'}`;
+        div.innerHTML = `
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold w-4">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '#' + (idx + 1)}</span>
+            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-sm border border-slate-700">${p.avatar}</div>
+            <div>
+              <p class="text-xs font-black ${isUser ? 'text-teal-300' : 'text-slate-200'}">${p.name} ${isUser ? '(Moi)' : ''}</p>
+              <p class="text-[10px] text-slate-400">Niv. ${Math.floor(p.xp / 100) + 1}</p>
+            </div>
+          </div>
+          <span class="text-xs font-black text-amber-400">${p.xp} XP</span>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function addFriend() {
+      const input = document.getElementById('friendInput');
+      const name = input.value.trim();
+      if (!name) return;
+      friends.push({ name: name, xp: Math.floor(Math.random() * (userData.xp + 150)), avatar: "⚡" });
+      saveAll();
+      input.value = "";
+      renderLeaderboard();
+      updateHeader();
+      showToast(`🔥 ${name} a rejoint votre ligue !`);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMessage').innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-[-20px]');
+      setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-[-20px]'), 3500);
+    }
+
+    // Démarrage
+    fetchAllCountries();
+  </script>
+</body>
+  </html>
